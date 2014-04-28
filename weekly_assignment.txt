@@ -1,0 +1,123 @@
+Assignment for this week
+
+Overview:
+Recreate the Normal Game Mode of Lumos: The Dying Light.
+
+Minimum Requirements:
+Screens -
+> Main Menu
+>>> Needs to have at least 2 buttons, one leading to Main Game screen, the other leading to Highscores screen (use the same assets in the folder imgs/mainmenu/)
+>>> see also screenshots/mainmenu.png. The elements inside the red rectangles are the elements needed in the main menu screen.
+> Main Game
+>>> See [Game Mechanics] below
+> Highscores
+>>> Show the player's highscore in a similar layout as in the game (see screenshots/hs.png, please ignore the other game modes)
+> (Popup) Pause
+>>> Only needs the Resume and Main Menu buttons. See screenshots/pause.png for the current layout, and imgs/pause/ for assets.
+> (Popup) Game Over
+>>> Only needs the elements rectangled in red (see screenshots/gameover.png). Assets are in imgs/gameover/.
+
+
+[Game Mechanics]
+The goal of the game is to keep the light alive for as long as possible.
+
+- The Light
+The light in the center of the screen starts with a radius of 64px, and grows 1px after every second.
+Whenever an enemy comes in contact with the light, the light's radius will be halved, and will also leave an explosion with twice the radius of the original light, killing nearby enemies.
+The game is over when the radius of the light becomes less than 8px.
+
+- Little Photons
+Photons are the small light particles that appear from the edges of the screen towards your light.
+Once they come in contact with the light, they will become absorbed, increasing the light's radius by 1.
+They move at a rate of 30px/sec, or 1500px/sec when tapped.
+Their spawning algorithm is as follows:
+* maximum existing photons at any given time is min(6, 2+floor(GAME_TIME/75000)), where GAME_TIME is in msecs.
+* at each tick, create max(0, X) photons, where X is the difference between the maximum existing photons and the current existing photons.
+
+- Enemies
+There are 3 types of enemies in the game:
+1.) Darkmites (Tap) - dies when tapped
+- Level 1 Darkmites die when tapped
+- Level 2 Darkmites spawn a single Level 1 Darkmite when they die
+- Level 3 Darkmites spawn 3 Level 2 Darkmites when they die
+- Level 4 Darkmites spawn 4 Level 3 Darkmites when they die. 
+  They also have 4 bullets orbiting them, and they shoot these bullets one at a time every 4 seconds.
+  The bullets are destroyed when tapped.
+  
+2.) Spectres (Flick) - dies when flicked away
+- Level 1 Spectres die when flicked
+- Level 2 Spectres needs to be killed twice
+- Level 3 Spectres needs to be killed thrice
+- Level 4 Spectres needs to be killed four times
+
+3.) Tendrils (Slash) - dies when sliced
+- Level 1 Tendrils die when sliced
+- Level 2 Tendrils will regrow 1 time after being sliced. These need to be sliced again.
+- Level 3 Tendrils will split into two Tendrils when sliced. These children need to be only sliced once.
+- Level 4 Tendrils will split and regrow, effectively splitting into 3 tendrils. These children need to be only sliced once.
+
+NOTE:
+Whenever an enemy dies from an explosion (either from the light, or from powerups), they will die immediately and
+their abilities will not trigger (e.g. the Level 4 Darkmite will NOT split into 4 Level 3 Darkmites)
+
+- Enemy Spawning
+These are all creation rates. A value of 2 means that 2 enemies of that type are created per second.
+
++----------+--------------+---------------+---------------+
+|   TIME   |   Darkmite   |    Spectre    |    Tendril    |
++----------+--------------+---------------+---------------+
+|  <= 8s   |       2      |       0       |       0       |
+|  <= 16s  |       0      |      0.3      |       0       |
+|  <= 24s  |       0      |       0       |      0.3      |
+|  <= 80s  |      2.1     |      0.24     |      0.37     |
+|  <= 120s |      1.6     |      0.24     |      0.21     |
+|  <= 160s |      1.6     |      0.04     |      0.08     |
+|  <= 190s |      1.8     |      0.11     |      0.21     |
+|  <= 240s |      2.1     |      0.2      |      0.26     |
+|  <= 260s |      2.1     |      0.11     |      0.21     |
+|  <= 320s |      1.8     |      0.15     |      0.26     |
+|  <= 360s |      1.9     |      0.18     |      0.29     |
+|  <= 400s |      2.0     |      0.21     |      0.31     |
+|  >  400s |      2.3     |      0.26     |      0.35     |
++----------+--------------+---------------+---------------+
+
+- Enemy Levels
+Whenever you need to get the level of the enemy to spawn, consult this table. 
+To use the Level Distribution List, get a random item from it.
+(e.g. {1, 1, 1, 2} means that 1 will show up 3/4, or 75% of the time, while 2 will show up 1/4 or 25% of the time)
++----------+-------------------------+
+|   TIME   | Level Distribution List |
++----------+-------------------------+
+|  < 80s   |          {1}            |
+|  < 160s  |       {1,2,2,2}         |
+|  < 240s  |  {1,2,2,2,3,3,3,3,3,3}  |
+|  < 300s  |  {2,3,3,3,3,3,3,3,4,4}  |
+|  >=300s  |  {2,3,3,4,4,4,4,4,4,4}  |
++----------+-------------------------+
+
+
+- Powerups
+There are 5 types of powerups in the game:
+1.) Light Bomb - These spawn randomly every 19 to 25 seconds. When tapped, kills all enemies within a radius of 300px.
+2.) Electroblast - These spawn randomly every 57 to 63 seconds. When tapped, kills all enemies in the screen.
+3.) Darkmite Flare - When tapped, kills all Darkmites in the screen. They look like Darkmites, except with white bodies.
+4.) Spectre Flare - When flicked away, kills all Spectres in the screen. They look like spectres, except with white bodies.
+5.) Tendril Flare - When sliced, kills all Tendrils in the screen. They look like tendrils, except with white bodies.
+
+NOTE:
+A random Flare (either #3, #4, or #5) will spawn every 67 to 73 seconds.
+Once any powerup comes into contact with the light, they will become absorbed by the light, increasing the light's radius by the ff amounts:
+- Light Bomb: 16px
+- Electroblast: 64px
+- All Flares: 32px
+They all spawn from the edge of the screen.
+
+- Frenzy (the part where the bg goes red)
+After 48 seconds, and every minute afterwards, the game goes in a state called Frenzy Mode. This mode lasts only for 16 seconds.
+In this mode, the following changes are present:
+* The creation rate of all enemies are multiplied by 1.22
+* The movement speed of all enemies are multiplied by 1.33
+
+
+- Misc
+For the pause button, you can use imgs/misc/btn_realm_back.png
